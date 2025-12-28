@@ -1,0 +1,1319 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>業務チェック</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        header {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 12px;
+            color: #999;
+        }
+
+        .empty-state h2 {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .group-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .group-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .group-card.active {
+            border-color: #34C759;
+            background: #f0fdf4;
+        }
+
+        .group-card:active {
+            transform: scale(0.98);
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .group-toggle {
+            width: 50px;
+            height: 28px;
+            background: #ccc;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .group-toggle.active {
+            background: #34C759;
+        }
+
+        .group-toggle::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .group-toggle.active::after {
+            left: 24px;
+        }
+
+        .group-name {
+            font-weight: 600;
+            flex: 1;
+            font-size: 16px;
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .group-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .group-btn:active {
+            opacity: 0.8;
+        }
+
+        .group-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .task-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .priority-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .priority-1 { background: #007AFF; }
+        .priority-2 { background: #34C759; }
+        .priority-3 { background: #FFCC00; }
+        .priority-4 { background: #FF9500; }
+        .priority-5 { background: #FF3B30; }
+
+        .task-name {
+            flex: 1;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 32px;
+            right: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+            transition: all 0.2s;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: flex-end;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 16px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .modal-description {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-complete {
+            background: #34C759;
+            color: white;
+        }
+
+        .btn-complete:active {
+            opacity: 0.8;
+        }
+
+        .btn-edit {
+            background: white;
+            color: #007AFF;
+            border: 1px solid #007AFF;
+        }
+
+        .btn-edit:active {
+            background: #f0f0f0;
+        }
+
+        .btn-postpone {
+            background: #8E8E93;
+            color: white;
+        }
+
+        .btn-postpone:active {
+            opacity: 0.8;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007AFF;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #007AFF;
+            cursor: pointer;
+            border: none;
+        }
+
+        .interval-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .interval-btn {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .interval-btn.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+
+        .btn-save {
+            width: 100%;
+            padding: 16px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 56px;
+        }
+
+        .btn-save:active {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .btn-danger {
+            border-color: #FF3B30;
+            color: #FF3B30;
+        }
+
+        .btn-danger:active {
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .settings-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .settings-label-text {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .settings-label-desc {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .toggle {
+            width: 50px;
+            height: 28px;
+            background: #ccc;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: #34C759;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle.active::after {
+            left: 24px;
+        }
+
+        #deleteContainer {
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom-color: #007AFF;
+            color: #007AFF;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>業務チェック</h1>
+            <button class="settings-btn" onclick="showSettings()">⚙️</button>
+        </header>
+
+        <div style="display: flex; gap: 0; border-bottom: 1px solid #e0e0e0;">
+            <button class="tab active" onclick="switchTab('groups')">業務グループ</button>
+            <button class="tab" onclick="switchTab('tasks')">タスク一覧</button>
+        </div>
+
+        <div class="content">
+            <div id="groupsTab" class="tab-content active">
+                <div id="groupList" class="group-list">
+                    <div class="empty-state">
+                        <h2>業務グループがありません</h2>
+                        <p>業務グループを追加して始めましょう</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tasksTab" class="tab-content">
+                <div id="taskList" class="group-list">
+                    <div class="empty-state">
+                        <h2>タスクがありません</h2>
+                        <p>タスクを追加して始めましょう</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="fab" onclick="showAddGroup()">+</button>
+    </div>
+
+    <div id="taskModal" class="modal" onclick="closeTaskModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTaskName"></div>
+                <div class="modal-description" id="modalTaskDesc"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-complete" id="completeBtn" onclick="completeTask()">行った</button>
+                <button class="btn btn-complete" id="undoBtn" style="display: none; background: #FF9500;" onclick="undoTask()">戻す</button>
+                <button class="btn btn-postpone" id="postponeBtn" onclick="postponeTask()">後回し</button>
+            </div>
+            <button class="btn btn-edit" onclick="editCurrentTask()">編集</button>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal" onclick="closeEditModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="editTitle">作成</div>
+            </div>
+
+            <form onsubmit="saveItem(event)">
+                <div class="form-group">
+                    <label class="form-label">名前 *</label>
+                    <input type="text" id="itemName" class="form-input" placeholder="名前を入力" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">説明</label>
+                    <textarea id="itemDesc" class="form-textarea" placeholder="説明を入力（オプション）"></textarea>
+                </div>
+
+                <div id="taskFields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">優先順位: <span id="priorityValue">3</span></label>
+                        <div class="slider-container">
+                            <input type="range" id="priority" min="1" max="5" value="3" onchange="updatePriorityDisplay()">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-top: 4px;">
+                            <span>低</span>
+                            <span>高</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">実行予定時刻</label>
+                        <input type="time" id="scheduledTime" class="form-input" value="09:00">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">実行間隔</label>
+                        <div class="interval-buttons">
+                            <button type="button" class="interval-btn active" data-interval="daily" onclick="selectInterval(this)">毎日</button>
+                            <button type="button" class="interval-btn" data-interval="weekly" onclick="selectInterval(this)">毎週</button>
+                            <button type="button" class="interval-btn" data-interval="monthly" onclick="selectInterval(this)">毎月</button>
+                            <button type="button" class="interval-btn" data-interval="once" onclick="selectInterval(this)">1回限り</button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="selectedInterval" value="daily">
+                </div>
+
+                <button type="submit" class="btn-save">保存</button>
+            </form>
+
+            <div id="deleteContainer">
+                <button type="button" class="btn-secondary" id="resetTasksBtn" style="display: none; background: #FF9500; color: white; margin-bottom: 12px;" onclick="resetAllCompletedTasks()">完了したタスクをすべて戻す</button>
+                <button class="btn-secondary btn-danger" onclick="deleteItem()">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal" onclick="closeSettings(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">設定</div>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <span class="settings-label-text">通知を有効にする</span>
+                    <span class="settings-label-desc">タスク実行時刻に通知を表示します</span>
+                </div>
+                <button class="toggle active" id="notificationToggle" onclick="toggleNotification()"></button>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <span class="settings-label-text">サウンド</span>
+                    <span class="settings-label-desc">通知時に音を再生します</span>
+                </div>
+                <button class="toggle active" id="soundToggle" onclick="toggleSound()"></button>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <span class="settings-label-text">振動</span>
+                    <span class="settings-label-desc">通知時に振動します</span>
+                </div>
+                <button class="toggle active" id="vibrationToggle" onclick="toggleVibration()"></button>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-label">
+                    <span class="settings-label-text">アプリバージョン</span>
+                </div>
+                <span style="color: #999; font-size: 14px;">2.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        let currentTaskId = null;
+        let currentEditingId = null;
+        let currentEditingType = null;
+        let currentGroupId = null;
+
+        const initDB = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ProgressChecker', 2);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve();
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('groups')) {
+                        const store = db.createObjectStore('groups', { keyPath: 'id' });
+                        store.createIndex('active', 'active', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('tasks')) {
+                        const store = db.createObjectStore('tasks', { keyPath: 'id' });
+                        store.createIndex('groupId', 'groupId', { unique: false });
+                    }
+                };
+            });
+        };
+
+        const getGroups = () => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['groups'], 'readonly');
+                const store = transaction.objectStore('groups');
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+            });
+        };
+
+        const getTasks = () => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['tasks'], 'readonly');
+                const store = transaction.objectStore('tasks');
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+            });
+        };
+
+        const getTasksByGroup = async (groupId) => {
+            const tasks = await getTasks();
+            return tasks.filter(t => t.groupId === groupId);
+        };
+
+        const switchTab = (tab) => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+            if (tab === 'groups') renderGroups();
+            else renderAllTasks();
+        };
+
+        const renderGroups = async () => {
+            const groups = await getGroups();
+            const listContainer = document.getElementById('groupList');
+
+            if (groups.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h2>業務グループがありません</h2>
+                        <p>業務グループを追加して始めましょう</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedGroups = groups.sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0));
+
+            listContainer.innerHTML = await Promise.all(sortedGroups.map(async (group) => {
+                const tasks = await getTasksByGroup(group.id);
+                const completedCount = tasks.filter(t => t.completed).length;
+                return `
+                    <div class="group-card ${group.active ? 'active' : ''}">
+                        <div class="group-header">
+                            <button class="group-toggle ${group.active ? 'active' : ''}" onclick="toggleGroup('${group.id}')"></button>
+                            <div class="group-name">${group.name}</div>
+                            <div class="group-actions">
+                                <button class="group-btn" onclick="editGroup('${group.id}')">編集</button>
+                            </div>
+                        </div>
+                        ${group.description ? `<div style="font-size: 14px; color: #666; margin-bottom: 12px;">${group.description}</div>` : ''}
+                        <div style="font-size: 12px; color: #999; margin-bottom: 12px;">タスク: ${completedCount}/${tasks.length}</div>
+                        <div class="group-tasks">
+                            ${tasks.map(task => `
+                                <div class="task-item ${task.completed ? 'completed' : ''}" onclick="showTaskModal('${task.id}')">
+                                    <div class="priority-dot priority-${task.priority}"></div>
+                                    <div class="task-name">${task.name}</div>
+                                    <div class="task-time">${task.scheduledTime}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="group-btn" style="width: 100%; margin-top: 12px; background: #007AFF;" onclick="addTaskToGroup('${group.id}')">タスク追加</button>
+                    </div>
+                `;
+            })).then(html => html.join(''));
+        };
+
+        const renderAllTasks = async () => {
+            const tasks = await getTasks();
+            const listContainer = document.getElementById('taskList');
+
+            if (tasks.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h2>タスクがありません</h2>
+                        <p>タスクを追加して始めましょう</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedTasks = tasks.sort((a, b) => b.priority - a.priority);
+            listContainer.innerHTML = sortedTasks.map(task => `
+                <div class="group-card" onclick="showTaskModal('${task.id}')">
+                    <div class="group-header">
+                        <div class="priority-dot priority-${task.priority}"></div>
+                        <div class="group-name">${task.name}</div>
+                        ${task.completed ? '<div style="font-size: 18px;">✓</div>' : ''}
+                    </div>
+                    ${task.description ? `<div style="font-size: 14px; color: #666; margin-bottom: 8px;">${task.description}</div>` : ''}
+                    <div style="font-size: 12px; color: #999;">${task.scheduledTime} • ${task.interval === 'daily' ? '毎日' : task.interval === 'weekly' ? '毎週' : task.interval === 'monthly' ? '毎月' : '1回限り'}</div>
+                </div>
+            `).join('');
+        };
+
+        const showAddGroup = () => {
+            currentEditingId = null;
+            currentEditingType = 'group';
+            document.getElementById('editTitle').textContent = '業務グループ作成';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('taskFields').style.display = 'none';
+            document.getElementById('deleteContainer').style.display = 'none';
+            document.getElementById('editModal').classList.add('active');
+        };
+
+        const addTaskToGroup = (groupId) => {
+            currentEditingId = null;
+            currentEditingType = 'task';
+            currentGroupId = groupId;
+            document.getElementById('editTitle').textContent = 'タスク作成';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('priority').value = '3';
+            document.getElementById('scheduledTime').value = '09:00';
+            document.getElementById('selectedInterval').value = 'daily';
+            document.getElementById('taskFields').style.display = 'block';
+            document.getElementById('deleteContainer').style.display = 'none';
+            updatePriorityDisplay();
+            document.querySelectorAll('.interval-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.interval === 'daily');
+            });
+            document.getElementById('editModal').classList.add('active');
+        };
+
+        const editGroup = (groupId) => {
+            currentEditingId = groupId;
+            currentEditingType = 'group';
+            getGroups().then(groups => {
+                const group = groups.find(g => g.id === groupId);
+                if (group) {
+                    document.getElementById('editTitle').textContent = '業務グループ編集';
+                    document.getElementById('itemName').value = group.name;
+                    document.getElementById('itemDesc').value = group.description || '';
+                    document.getElementById('taskFields').style.display = 'none';
+                    document.getElementById('deleteContainer').style.display = 'block';
+                    document.getElementById('resetTasksBtn').style.display = 'block';
+                    document.getElementById('editModal').classList.add('active');
+                }
+            });
+        };
+
+        const editCurrentTask = () => {
+            getTasks().then(tasks => {
+                const task = tasks.find(t => t.id === currentTaskId);
+                if (task) {
+                    closeTaskModal();
+                    editTask(task.id);
+                }
+            });
+        };
+
+        const editTask = (taskId) => {
+            currentEditingId = taskId;
+            currentEditingType = 'task';
+            getTasks().then(tasks => {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    document.getElementById('editTitle').textContent = 'タスク編集';
+                    document.getElementById('itemName').value = task.name;
+                    document.getElementById('itemDesc').value = task.description || '';
+                    document.getElementById('priority').value = task.priority;
+                    document.getElementById('scheduledTime').value = task.scheduledTime;
+                    document.getElementById('selectedInterval').value = task.interval;
+                    document.getElementById('taskFields').style.display = 'block';
+                    document.getElementById('deleteContainer').style.display = 'block';
+                    document.getElementById('resetTasksBtn').style.display = 'none';
+                    updatePriorityDisplay();
+                    document.querySelectorAll('.interval-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.interval === task.interval);
+                    });
+                    document.getElementById('editModal').classList.add('active');
+                }
+            });
+        };
+
+        const saveItem = async (event) => {
+            event.preventDefault();
+
+            if (currentEditingType === 'group') {
+                const group = {
+                    id: currentEditingId || Date.now().toString(),
+                    name: document.getElementById('itemName').value,
+                    description: document.getElementById('itemDesc').value,
+                    active: false,
+                    createdAt: new Date().toISOString(),
+                };
+
+                return new Promise((resolve) => {
+                    const transaction = db.transaction(['groups'], 'readwrite');
+                    const store = transaction.objectStore('groups');
+                    const request = store.put(group);
+
+                    request.onsuccess = () => {
+                        closeEditModal();
+                        renderGroups();
+                        resolve();
+                    };
+                });
+            } else {
+                const task = {
+                    id: currentEditingId || Date.now().toString(),
+                    groupId: currentGroupId,
+                    name: document.getElementById('itemName').value,
+                    description: document.getElementById('itemDesc').value,
+                    priority: parseInt(document.getElementById('priority').value),
+                    scheduledTime: document.getElementById('scheduledTime').value,
+                    interval: document.getElementById('selectedInterval').value,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                };
+
+                return new Promise((resolve) => {
+                    const transaction = db.transaction(['tasks'], 'readwrite');
+                    const store = transaction.objectStore('tasks');
+                    const request = store.put(task);
+
+                    request.onsuccess = () => {
+                        closeEditModal();
+                        renderGroups();
+                        resolve();
+                    };
+                });
+            }
+        };
+
+        const resetAllCompletedTasks = async () => {
+            if (!currentEditingId || currentEditingType !== 'group') return;
+
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['tasks'], 'readwrite');
+                const store = transaction.objectStore('tasks');
+                const getAllRequest = store.getAll();
+
+                getAllRequest.onsuccess = () => {
+                    const allTasks = getAllRequest.result;
+                    const groupTasks = allTasks.filter(t => t.groupId === currentEditingId && t.completed);
+
+                    groupTasks.forEach(task => {
+                        task.completed = false;
+                        delete task.lastCompletedAt;
+                        store.put(task);
+                    });
+
+                    closeEditModal();
+                    renderGroups();
+                    resolve();
+                };
+            });
+        };
+
+        const deleteItem = async () => {
+            if (!currentEditingId) return;
+
+            const storeName = currentEditingType === 'group' ? 'groups' : 'tasks';
+            return new Promise((resolve) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(currentEditingId);
+
+                request.onsuccess = () => {
+                    closeEditModal();
+                    if (currentEditingType === 'group') renderGroups();
+                    else renderAllTasks();
+                    resolve();
+                };
+            });
+        };
+
+        const toggleGroup = async (groupId) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['groups'], 'readwrite');
+                const store = transaction.objectStore('groups');
+                const getRequest = store.get(groupId);
+
+                getRequest.onsuccess = () => {
+                    const group = getRequest.result;
+                    group.active = !group.active;
+
+                    const updateRequest = store.put(group);
+                    updateRequest.onsuccess = () => {
+                        renderGroups();
+                        resolve();
+                    };
+                };
+            });
+        };
+
+        const showTaskModal = (taskId) => {
+            currentTaskId = taskId;
+            getTasks().then(tasks => {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    document.getElementById('modalTaskName').textContent = task.name;
+                    document.getElementById('modalTaskDesc').textContent = task.description || '';
+                    
+                    const completeBtn = document.getElementById('completeBtn');
+                    const undoBtn = document.getElementById('undoBtn');
+                    
+                    if (task.completed) {
+                        completeBtn.style.display = 'none';
+                        undoBtn.style.display = 'flex';
+                    } else {
+                        completeBtn.style.display = 'flex';
+                        undoBtn.style.display = 'none';
+                    }
+                    
+                    document.getElementById('taskModal').classList.add('active');
+                }
+            });
+        };
+
+        const closeTaskModal = (event) => {
+            if (event && event.target.id !== 'taskModal') return;
+            document.getElementById('taskModal').classList.remove('active');
+            currentTaskId = null;
+        };
+
+        const completeTask = async () => {
+            if (!currentTaskId) return;
+
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['tasks'], 'readwrite');
+                const store = transaction.objectStore('tasks');
+                const getRequest = store.get(currentTaskId);
+
+                getRequest.onsuccess = () => {
+                    const task = getRequest.result;
+                    task.completed = true;
+                    task.lastCompletedAt = new Date().toISOString();
+
+                    const updateRequest = store.put(task);
+                    updateRequest.onsuccess = () => {
+                        closeTaskModal();
+                        renderGroups();
+                        resolve();
+                    };
+                };
+            });
+        };
+
+        const undoTask = async () => {
+            if (!currentTaskId) return;
+
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['tasks'], 'readwrite');
+                const store = transaction.objectStore('tasks');
+                const getRequest = store.get(currentTaskId);
+
+                getRequest.onsuccess = () => {
+                    const task = getRequest.result;
+                    task.completed = false;
+                    delete task.lastCompletedAt;
+
+                    const updateRequest = store.put(task);
+                    updateRequest.onsuccess = () => {
+                        closeTaskModal();
+                        renderGroups();
+                        resolve();
+                    };
+                };
+            });
+        };
+
+        const postponeTask = async () => {
+            if (!currentTaskId) return;
+
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['tasks'], 'readwrite');
+                const store = transaction.objectStore('tasks');
+                const getRequest = store.get(currentTaskId);
+
+                getRequest.onsuccess = () => {
+                    const task = getRequest.result;
+                    task.postponedAt = new Date().toISOString();
+
+                    const updateRequest = store.put(task);
+                    updateRequest.onsuccess = () => {
+                        closeTaskModal();
+                        renderGroups();
+                        resolve();
+                    };
+                };
+            });
+        };
+
+        const closeEditModal = (event) => {
+            if (event && event.target.id !== 'editModal') return;
+            document.getElementById('editModal').classList.remove('active');
+            currentEditingId = null;
+            currentEditingType = null;
+            currentGroupId = null;
+        };
+
+        const updatePriorityDisplay = () => {
+            document.getElementById('priorityValue').textContent = document.getElementById('priority').value;
+        };
+
+        const selectInterval = (button) => {
+            document.querySelectorAll('.interval-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            document.getElementById('selectedInterval').value = button.dataset.interval;
+        };
+
+        const showSettings = () => {
+            document.getElementById('settingsModal').classList.add('active');
+        };
+
+        const closeSettings = (event) => {
+            if (event && event.target.id !== 'settingsModal') return;
+            document.getElementById('settingsModal').classList.remove('active');
+        };
+
+        const toggleNotification = () => {
+            document.getElementById('notificationToggle').classList.toggle('active');
+        };
+
+        const toggleSound = () => {
+            document.getElementById('soundToggle').classList.toggle('active');
+        };
+
+        const toggleVibration = () => {
+            document.getElementById('vibrationToggle').classList.toggle('active');
+        };
+
+        const registerServiceWorker = async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('[App] Service Worker registered:', registration);
+                } catch (error) {
+                    console.log('[App] Service Worker registration failed:', error);
+                }
+            }
+        };
+
+        const checkAndNotify = async () => {
+            const groups = await getGroups();
+            const tasks = await getTasks();
+            const now = new Date();
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            console.log('[App] Checking notifications at', currentTime);
+
+            for (const group of groups) {
+                if (!group.active) continue;
+
+                const groupTasks = tasks.filter(t => t.groupId === group.id);
+                
+                for (const task of groupTasks) {
+                    if (task.completed) continue;
+                    if (task.scheduledTime !== currentTime) continue;
+
+                    // Check if already notified today
+                    if (task.lastNotifiedAt) {
+                        const lastNotified = new Date(task.lastNotifiedAt);
+                        if (lastNotified.toDateString() === now.toDateString()) {
+                            continue;
+                        }
+                    }
+
+                    console.log('[App] Sending notification for task:', task.name);
+                    
+                    // Mark as notified
+                    const transaction = db.transaction(['tasks'], 'readwrite');
+                    const store = transaction.objectStore('tasks');
+                    task.lastNotifiedAt = new Date().toISOString();
+                    store.put(task);
+
+                    // Send notification
+                    const title = `${group.name} - ${task.name}`;
+                    const options = {
+                        body: task.description || 'タスクを実行してください',
+                        icon: '🔔',
+                        badge: '🔔',
+                        tag: `task-${task.id}`,
+                        requireInteraction: true,
+                        vibrate: [200, 100, 200],
+                    };
+
+                    // Show notification via Service Worker if available
+                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'SHOW_NOTIFICATION',
+                            title: title,
+                            options: options,
+                        });
+                    }
+
+                    // Also show in-app notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification(title, options);
+                    }
+
+                    // Show popup if app is in focus
+                    if (document.visibilityState === 'visible') {
+                        showTaskModal(task.id);
+                    }
+                }
+
+                // Check for postponed task interruptions (5 minutes later)
+                for (const task of groupTasks) {
+                    if (task.completed) continue;
+                    if (!task.postponedAt) continue;
+
+                    const postponedTime = new Date(task.postponedAt);
+                    const elapsedMinutes = (now - postponedTime) / (1000 * 60);
+
+                    if (elapsedMinutes >= 5) {
+                        // Find current visible task
+                        const currentlyVisibleTask = groupTasks
+                            .filter(t => !t.completed && !t.postponedAt)
+                            .sort((a, b) => b.priority - a.priority)[0];
+
+                        // Check if this postponed task should interrupt
+                        if (!currentlyVisibleTask || task.priority >= currentlyVisibleTask.priority) {
+                            console.log('[App] Postponed task interrupting:', task.name);
+
+                            // Clear postponed status
+                            const transaction = db.transaction(['tasks'], 'readwrite');
+                            const store = transaction.objectStore('tasks');
+                            delete task.postponedAt;
+                            store.put(task);
+
+                            // Send interruption notification
+                            const title = `\ud83d\udea8 ${group.name} - ${task.name}`;
+                            const options = {
+                                body: '\u540e\u56de\u3057\u305f\u30bf\u30b9\u30af\u304c\u5272\u308a\u8fbc\u307f\u307e\u3057\u305f',
+                                icon: '\ud83d\udea8',
+                                badge: '\ud83d\udea8',
+                                tag: `interrupt-${task.id}`,
+                                requireInteraction: true,
+                                vibrate: [300, 100, 300, 100, 300],
+                            };
+
+                            // Show notification via Service Worker if available
+                            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                                navigator.serviceWorker.controller.postMessage({
+                                    type: 'SHOW_NOTIFICATION',
+                                    title: title,
+                                    options: options,
+                                });
+                            }
+
+                            // Also show in-app notification
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification(title, options);
+                            }
+
+                            // Show popup if app is in focus
+                            if (document.visibilityState === 'visible') {
+                                showTaskModal(task.id);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const init = async () => {
+            await initDB();
+            registerServiceWorker();
+            renderGroups();
+            
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Check every minute
+            setInterval(checkAndNotify, 60000);
+            // Also check immediately
+            checkAndNotify();
+
+            // Listen for visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    console.log('[App] App became visible');
+                    checkAndNotify();
+                }
+            });
+        };
+
+        init();
+    </script>
+</body>
+</html>
